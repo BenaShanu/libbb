@@ -65,7 +65,6 @@ export default class TransactionScreen extends Component {
     }
   };
 
-  ///bp
   handleTransaction = async () => {
     var { bookId, studentId } = this.state;
     await this.getBookDetails(bookId);
@@ -134,7 +133,60 @@ export default class TransactionScreen extends Component {
       });
   };
 
-  //Bp
+  checkBookAvailability = async (bookId) => {
+    const bookRef = await db
+      .collection("books")
+      .where("book_id", "==", bookId)
+      .get();
+
+    var transactionType = "";
+    if (bookRef.docs.length == 0) {
+      transactionType = false;
+    } else {
+      bookRef.docs.map(doc => {
+        //if the book is available then transaction type will be issue
+        // otherwise it will be return
+        transactionType = doc.data().is_book_available ? "issue" : "return";
+      });
+    }
+
+    return transactionType;
+  };
+
+  checkStudentEligibilityForBookIssue = async studentId => {
+    const studentRef = await db
+      .collection("students")
+      .where("student_id", "==", studentId)
+      .get();
+
+    var isStudentEligible = "";
+    if (studentRef.docs.length == 0) {
+      this.setState({
+        bookId: "",
+        studentId: ""
+      });
+      isStudentEligible = false;
+      Alert.alert("The student id doesn't exist in the database!");
+    } else {
+      studentRef.docs.map(doc => {
+        if (doc.data().number_of_books_issued < 2) {
+          isStudentEligible = true;
+        } else {
+          isStudentEligible = false;
+          console.log(studentRef);
+          Alert.alert("The student has already issued 2 books!");
+          this.setState({
+            bookId: "",
+            studentId: ""
+            
+          });
+        }
+      });
+    }
+
+    return isStudentEligible;
+  };
+
   checkStudentEligibilityForBookReturn = async (bookId, studentId) => {
     const transactionRef = await db
       .collection("transactions")
